@@ -12,6 +12,12 @@ export type Chunk = {
 
 let chunks: Chunk[] = [];
 
+// Safety cap: don't keep unlimited text per page (helps avoid huge token counts)
+const MAX_CHARS_PER_PAGE = 8000;
+
+// How many chunks to embed in one API call
+const EMBEDDING_BATCH_SIZE = 100;
+
 function chunkText(text: string, size = 1000, overlap = 200): string[] {
   const result: string[] = [];
   let start = 0;
@@ -45,7 +51,13 @@ export async function indexPages(pages: CrawledPage[]) {
 
   const allChunks: { content: string; url: string }[] = [];
   for (const page of pages) {
-    const pieces = chunkText(page.text);
+    // Truncate very long pages to avoid insane token counts
+    const clippedText =
+      page.text.length > MAX_CHARS_PER_PAGE
+        ? page.text.slice(0, MAX_CHARS_PER_PAGE)
+        : page.text;
+
+    const pieces = chunkText(clippedText);
     for (const p of pieces) {
       allChunks.push({ content: p, url: page.url });
     }
@@ -56,21 +68,36 @@ export async function indexPages(pages: CrawledPage[]) {
     return;
   }
 
-  const inputs = allChunks.map((c) => c.content);
+  console.log("[store] Total chunks to embed:", allChunks.length);
 
-  const embeddingRes = await client.embeddings.create({
-    model: "text-embedding-3-small",
-    input: inputs
-  });
+  const model = "text-embedding-3-small";
 
-  const vectors = embeddingRes.data.map((d) => d.embedding);
+  // Embed in batches so we never hit the 300k-token limit in one request
+  for (let i = 0; i < allChunks.length; i += EMBEDDING_BATCH_SIZE) {
+    const batch = allChunks.slice(i, i + EMBEDDING_BATCH_SIZE);
+    const inputs = batch.map((c) => c.content);
 
-  chunks = allChunks.map((c, i) => ({
-    id: `chunk-${i}`,
-    url: c.url,
-    content: c.content,
-    embedding: vectors[i]
-  }));
+    console.log(
+      `[store] Embedding batch ${i}–${i + batch.length - 1} (size=${batch.length})`
+    );
+
+    const embeddingRes = await client.embeddings.create({
+      model,
+      input: inputs,
+    });
+
+    embeddingRes.data.forEach((d, idx) => {
+      const globalIndex = i + idx;
+      const src = batch[idx];
+
+      chunks.push({
+        id: `chunk-${globalIndex}`,
+        url: src.url,
+        content: src.content,
+        embedding: d.embedding,
+      });
+    });
+  }
 
   console.log("[store] Indexed chunks:", chunks.length);
 }
@@ -83,14 +110,14 @@ export async function retrieveRelevantChunks(
 
   const embeddingRes = await client.embeddings.create({
     model: "text-embedding-3-small",
-    input: [question]
+    input: [question],
   });
 
   const qEmbedding = embeddingRes.data[0].embedding;
 
   const scored = chunks.map((c) => ({
     chunk: c,
-    score: cosineSimilarity(qEmbedding, c.embedding)
+    score: cosineSimilarity(qEmbedding, c.embedding),
   }));
 
   scored.sort((a, b) => b.score - a.score);
