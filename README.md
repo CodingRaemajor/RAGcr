@@ -1,59 +1,57 @@
-# RAG Crawler + Next.js Frontend Deployment Guide
+# 🧠 RAG Chatbot System (Local Setup)
 
-This README explains how to properly set up, run, and deploy the **RAG Crawler Backend (Express)**.
+This README describes how to run your **local RAG chatbot** with:
 
----
-
-# 🚀 Project Overview
-
-1. **Backend (RAGcr folder)**
-   - Express server
-   - Crawls websites
-   - Generates embeddings
-   - Provides `/crawl` and `/chat` endpoints
-   - Cannot be hosted on Vercel Serverless as-is
+- 🔍 `crawler.ts` to extract web page content
+- 🧠 `store.ts` to embed content using OpenAI
+- 🤖 `chat.ts` to retrieve & answer questions using GPT-4
+- ✅ Working frontend connected via `NEXT_PUBLIC_API_URL`
 
 ---
 
-# 📦 Backend Setup (Local or External Host)
+## ⚙️ Backend Setup (RAGcr)
 
 ### 1. Install dependencies
 
-```powershell
-cd "C:\Users\ipart\OneDrive\Desktop\RAGcr"
+```bash
 pnpm install
 ```
 
-### 2. Add environment variables
-
-Create a file:
+### 2. Create `.env`
 
 ```
-.env
-```
-
-Contents:
-
-```env
 OPENAI_API_KEY=your-key-here
 PORT=3001
 ```
 
-### 3. Run backend locally
+### 3. Run backend
 
-```powershell
+```bash
 pnpm run dev
 ```
 
-You should see:
+You’ll see:
 
 ```
 RAG crawler chatbot server running on http://localhost:3001
 ```
 
-### 4. Backend endpoints
+---
 
-#### **POST /crawl**
+## 📦 Key Backend Files
+
+| File | Purpose |
+|------|---------|
+| `crawler.ts` | Crawl pages & extract clean text |
+| `store.ts` | Chunk text, create embeddings, in-memory search |
+| `chat.ts` | Answer user questions with GPT-4 |
+| `index.ts` | Express server with `/crawl` and `/chat` endpoints |
+
+---
+
+## 🧪 Backend Endpoints
+
+### `POST /crawl`
 
 ```json
 {
@@ -62,7 +60,7 @@ RAG crawler chatbot server running on http://localhost:3001
 }
 ```
 
-#### **POST /chat**
+### `POST /chat`
 
 ```json
 {
@@ -72,90 +70,23 @@ RAG crawler chatbot server running on http://localhost:3001
 
 ---
 
-# 🌐 Backend Deployment (IMPORTANT)
+## 💻 Frontend (Local Only)
 
-You **cannot** deploy the backend directly to Vercel — it will fail with:
+Make sure your **frontend project** (e.g., built with Next.js) points to the backend.
 
-```
-FUNCTION_INVOCATION_FAILED
-```
-
-Instead, host your backend on:
-
-- Render.com (recommended free tier)
-- Railway.app
-- Fly.io
-- Your own VPS / EC2
-
-Then the backend gets a public URL like:
-
-```
-https://rag-backend.onrender.com
-```
-
-You will use this URL in your Next.js frontend.
-
----
-
-# 🖥️ Frontend Setup (Next.js App for Vercel)
-
-### 1. Create your Next.js app
-
-```bash
-npx create-next-app@latest rag-web-ui --typescript
-cd rag-web-ui
-```
-
-### 2. Add environment variable
-
-Create:
-
-```
-.env.local
-```
-
-Contents:
+In `.env.local`:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
-When deploying to Vercel, change it to your hosted backend URL:
+Start frontend:
 
-```env
-NEXT_PUBLIC_API_URL=https://rag-backend.onrender.com
-```
-
----
-
-# 🎨 Frontend UI Features
-
-- Input field for website URL
-- Button to crawl & index
-- Live chat UI
-- Messages aligned left/right
-- “Bot is thinking…” indicators
-- Fully responsive, modern UI
-
----
-
-# 🚀 Running the Full System (Local Dev)
-
-### Terminal #1 → Start backend
-
-```powershell
-cd "C:\Users\ipart\OneDrive\Desktop\RAGcr"
-pnpm run dev
-```
-
-### Terminal #2 → Start frontend
-
-```powershell
-cd rag-web-ui
+```bash
 pnpm dev
 ```
 
-Open:
+Then open:
 
 ```
 http://localhost:3000
@@ -163,55 +94,26 @@ http://localhost:3000
 
 ---
 
-# 🌍 Deploying the Frontend to Vercel
+## 🧠 How Retrieval Works
 
-### 1. Push your `rag-web-ui` folder to GitHub
-
-### 2. Go to Vercel → New Project → Import repo
-
-### 3. Add environment variable:
-
-```env
-NEXT_PUBLIC_API_URL=https://rag-backend.onrender.com
-```
-
-### 4. Deploy
-Vercel will build and host the UI globally.
+- `crawler.ts` extracts readable text from all pages
+- `store.ts` chunks the content, embeds with OpenAI (`text-embedding-3-small`)
+- A user question is embedded and compared (cosine similarity)
+- Top-k chunks passed into GPT-4 via system prompt + chat
 
 ---
 
-# ❌ DO NOT DEPLOY BACKEND TO Vercel
+## 🔒 Notes
 
-The backend uses an Express server:
-
-```
-app.listen(...)
-```
-
-Vercel serverless functions cannot run a persistent server.
-
-Hence:
-
-- **Backend → Render/Railway**
-- **Frontend → Vercel**
+- No database: embeddings stored in memory (reset on restart)
+- No caching: embeddings recomputed per crawl
+- Works with up to ~500 chunks comfortably
 
 ---
 
-# 🎯 Summary
+## ✅ To-Do (Optional Enhancements)
 
-| Component | Host | Purpose |
-|----------|------|---------|
-| **Express Backend (RAGcr)** | Render/Railway/Local | Crawling, embeddings, answers |
-| **Next.js Frontend** | Vercel | UI for chatbot + crawl controls |
-
-This ensures everything works properly across both environments.
-
----
-
-# 📁 Files Included
-
-This README is included as a downloadable `.md` file named:
-
-```
-README_DEPLOYMENT.md
-```
+- Add SQLite or MongoDB to persist chunks
+- Add Redis for caching
+- Add daily scheduled crawling
+- Limit crawl scope to avoid too large payloads
