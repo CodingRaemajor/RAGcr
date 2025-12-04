@@ -1,12 +1,10 @@
 # RAG Crawler + Next.js Frontend Deployment Guide
 
-This README explains how to properly set up, run, and deploy the **RAG Crawler Backend (Express)** and **Next.js Frontend (Vercel)**.
+This README explains how to properly set up, run, and deploy the **RAG Crawler Backend (Express)**.
 
 ---
 
 # 🚀 Project Overview
-
-You are building a 2‑part system:
 
 1. **Backend (RAGcr folder)**
    - Express server
@@ -14,14 +12,6 @@ You are building a 2‑part system:
    - Generates embeddings
    - Provides `/crawl` and `/chat` endpoints
    - Cannot be hosted on Vercel Serverless as-is
-
-2. **Frontend (Next.js on Vercel)**
-   - UI for entering URLs
-   - Chat UI for querying the crawled site
-   - Hosted on Vercel
-   - Talks to your backend via `NEXT_PUBLIC_API_URL`
-
-Part-2 is in progress
 
 ---
 
