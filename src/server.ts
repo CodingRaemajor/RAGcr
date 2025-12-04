@@ -1,16 +1,25 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";                         // 👈 NEW
 import { crawlWebsite } from "./crawler";
 import { indexPages } from "./store";
 import { answerQuestion } from "./chat";
 
 const app = express();
+
+// ✅ Allow requests from your frontend (localhost:3000) or anything (for dev)
+app.use(
+  cors({
+    origin: "*",                                // you can restrict later
+  })
+);
+
 app.use(express.json());
 
 app.get("/", (_req, res) => {
   res.json({
     status: "ok",
-    message: "RAG crawler/chatbot running. Use POST /crawl and POST /chat."
+    message: "RAG crawler/chatbot running. Use POST /crawl and POST /chat.",
   });
 });
 
@@ -29,11 +38,13 @@ app.post("/crawl", async (req, res) => {
 
     res.json({
       message: "Crawl and indexing completed.",
-      pagesIndexed: pages.length
+      pagesIndexed: pages.length,
     });
   } catch (err: any) {
     console.error("[/crawl] Error:", err);
-    res.status(500).json({ error: "Failed to crawl site", details: err?.message });
+    res
+      .status(500)
+      .json({ error: "Failed to crawl site", details: err?.message });
   }
 });
 
@@ -50,7 +61,9 @@ app.post("/chat", async (req, res) => {
     res.json({ answer });
   } catch (err: any) {
     console.error("[/chat] Error:", err);
-    res.status(500).json({ error: "Failed to answer question", details: err?.message });
+    res
+      .status(500)
+      .json({ error: "Failed to answer question", details: err?.message });
   }
 });
 
