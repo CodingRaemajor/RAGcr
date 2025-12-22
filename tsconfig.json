@@ -11,5 +11,5 @@
     "types": ["node", "express"],
     "lib": ["ES2020"]
   },
-  "include": ["src", "api"]
+  "include": ["api/**/*", "lib/**/*"]
 }

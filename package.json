@@ -8,8 +8,10 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@vercel/node": "^5.5.16",
     "cheerio": "1.0.0-rc.12",
     "cors": "^2.8.5",
+    "crawler": "link:..\\lib\\crawler",
     "dotenv": "^16.4.0",
     "entities": "4.5.0",
     "express": "^4.19.0",
