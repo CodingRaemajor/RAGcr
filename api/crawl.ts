@@ -1,34 +1,25 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { cors } from "./cors";
-import { crawlWebsite } from "../lib/crawler";
+import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { crawlWebsite } from '../lib/crawler'
 
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  if (cors(req, res)) return;
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "POST only" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { url } = req.body;
+  const { url } = req.body
 
-  if (!url) {
-    return res.status(400).json({ error: "URL required" });
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'URL is required' })
   }
 
   try {
-    const pages = await crawlWebsite(url);
-
-    return res.status(200).json({
-      success: true,
-      pagesCrawled: pages.length,
-      data: pages
-    });
-  } catch (err: any) {
-    return res.status(500).json({
-      error: err.message || "Crawl failed"
-    });
+    const pages = await crawlWebsite(url)
+    return res.status(200).json({ pages })
+  } catch (error: any) {
+    console.error('Crawl error:', error)
+    return res.status(500).json({ error: 'Failed to crawl website' })
   }
 }

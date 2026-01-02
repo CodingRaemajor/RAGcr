@@ -1,19 +1,17 @@
-export async function crawlWebsite(url: string) {
-  const res = await fetch(url);
-  const html = await res.text();
+import fetch from 'node-fetch'
+import { load } from 'cheerio'
 
-  // VERY basic text extraction (Vercel-safe)
-  const text = html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+export async function crawlWebsite(url: string): Promise<string[]> {
+  const res = await fetch(url)
+  const html = await res.text()
 
-  return [
-    {
-      url,
-      content: text.slice(0, 5000) // prevent timeout
-    }
-  ];
+  const $ = load(html)
+  const texts: string[] = []
+
+  $('p').each((_, el) => {
+    const text = $(el).text().trim()
+    if (text.length > 50) texts.push(text)
+  })
+
+  return texts
 }
