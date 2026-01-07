@@ -25,9 +25,11 @@ export default async function handler(
       pagesIndexed: pages.length,
       preview: pages.slice(0, 3),
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Crawl failed" });
-    return;
-  }
+  } catch (error: any) {
+  console.error("Crawl error:", error.message);
+  res.status(500).json({
+    error: "Crawl failed",
+    detail: error.message,
+  });
+}
 }

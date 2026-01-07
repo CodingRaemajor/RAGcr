@@ -5,7 +5,13 @@ export default async function crawlWebsite(
   url: string,
   maxPages = 10
 ): Promise<string[]> {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120",
+      "Accept": "text/html",
+    }
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch website");
   }
