@@ -1,4 +1,3 @@
-// lib/crawler.ts
 import fetch from "node-fetch";
 import { load } from "cheerio";
 

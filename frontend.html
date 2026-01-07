@@ -97,6 +97,12 @@
       color: #6b7280;
       margin-top: 16px;
     }
+
+    #crawlStatus {
+      font-size: 13px;
+      margin-top: 8px;
+      color: #93c5fd;
+    }
   </style>
 </head>
 
@@ -136,72 +142,76 @@
   </div>
 
   <script>
-  const API_CHAT = "/api/chat";
-  const API_CRAWL = "/api/crawl";
+    const API_CHAT = "/api/chat";
+    const API_CRAWL = "/api/crawl";
 
-  const chatBox = document.getElementById("chatBox");
-  const siteUrl = document.getElementById("siteUrl");
-  const maxPages = document.getElementById("maxPages");
-  const questionInput = document.getElementById("questionInput");
-  const sendBtn = document.getElementById("sendBtn");
-  const crawlBtn = document.getElementById("crawlBtn");
-  const crawlStatus = document.getElementById("crawlStatus");
+    const chatBox = document.getElementById("chatBox");
+    const siteUrl = document.getElementById("siteUrl");
+    const maxPages = document.getElementById("maxPages");
+    const questionInput = document.getElementById("questionInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const crawlBtn = document.getElementById("crawlBtn");
+    const crawlStatus = document.getElementById("crawlStatus");
 
-  function msg(role, text) {
-    const div = document.createElement("div");
-    div.className = "msg " + (role === "user" ? "user" : "bot");
-    div.textContent = text;
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }
-
-  crawlBtn.onclick = async () => {
-    crawlStatus.textContent = "Crawling...";
-    try {
-      const res = await fetch(API_CRAWL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: siteUrl.value.trim(),
-          maxPages: Number(maxPages.value) || 5 // Default to 5 if empty
-        })
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        crawlStatus.textContent = "✅ Crawled successfully!";
-      } else {
-        crawlStatus.textContent = "❌ Error: " + (data.error || "Unknown error");
-      }
-    } catch (err) {
-      crawlStatus.textContent = "❌ Failed to crawl: " + err.message;
+    function msg(role, text) {
+      const div = document.createElement("div");
+      div.className = "msg " + (role === "user" ? "user" : "bot");
+      div.textContent = text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
     }
-  };
 
-  sendBtn.onclick = async () => {
-    const q = questionInput.value.trim();
-    if (!q) return;
-
-    msg("user", q);
-    questionInput.value = "";
-
-    try {
-      const res = await fetch(API_CHAT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q })
-      });
-
-      const data = await res.json();
-      if (res.ok && data.answer) {
-        msg("bot", data.answer);
-      } else {
-        msg("bot", "❌ Error: " + (data.error || "No answer."));
+    crawlBtn.onclick = async () => {
+      const url = siteUrl.value.trim();
+      const pages = Number(maxPages.value) || 5;
+      if (!url.startsWith("http")) {
+        crawlStatus.textContent = "❌ Please enter a valid URL (with http/https)";
+        return;
       }
-    } catch (err) {
-      msg("bot", "❌ Network error: " + err.message);
-    }
-  };
-</script>
+
+      crawlStatus.textContent = "⏳ Crawling...";
+      try {
+        const res = await fetch(API_CRAWL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, maxPages: pages })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          crawlStatus.textContent = `✅ Indexed ${data.pagesIndexed} pages.`;
+        } else {
+          crawlStatus.textContent = "❌ Error: " + (data.error || "Unknown crawl error");
+        }
+      } catch (err) {
+        crawlStatus.textContent = "❌ Network error: " + err.message;
+      }
+    };
+
+    sendBtn.onclick = async () => {
+      const q = questionInput.value.trim();
+      if (!q) return;
+
+      msg("user", q);
+      questionInput.value = "";
+
+      try {
+        const res = await fetch(API_CHAT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: q })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.answer) {
+          msg("bot", data.answer);
+        } else {
+          msg("bot", "❌ Error: " + (data.error || "No answer returned"));
+        }
+      } catch (err) {
+        msg("bot", "❌ Network error: " + err.message);
+      }
+    };
+  </script>
 </body>
 </html>
