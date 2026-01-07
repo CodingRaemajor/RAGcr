@@ -1,17 +1,27 @@
-import fetch from 'node-fetch'
-import { load } from 'cheerio'
+// lib/crawler.ts
+import fetch from "node-fetch";
+import { load } from "cheerio";
 
-export async function crawlWebsite(url: string): Promise<string[]> {
-  const res = await fetch(url)
-  const html = await res.text()
+export default async function crawlWebsite(
+  url: string,
+  maxPages = 10
+): Promise<string[]> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("Failed to fetch website");
+  }
 
-  const $ = load(html)
-  const texts: string[] = []
+  const html = await response.text();
+  const $ = load(html);
 
-  $('p').each((_, el) => {
-    const text = $(el).text().trim()
-    if (text.length > 50) texts.push(text)
-  })
+  const texts: string[] = [];
 
-  return texts
+  $("p").each((_, el) => {
+    const text = $(el).text().trim();
+    if (text.length > 50) {
+      texts.push(text);
+    }
+  });
+
+  return texts.slice(0, maxPages);
 }
