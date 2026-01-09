@@ -146,6 +146,7 @@
   const API_CRAWL = "/api/crawl";
 
   const chatBox = document.getElementById("chatBox");
+  const crawlStatus = document.getElementById("crawlStatus");
 
   function msg(role, text) {
     const div = document.createElement("div");
@@ -155,47 +156,62 @@
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
+  // ---- Crawl ----
   document.getElementById("crawlBtn").onclick = async () => {
+    crawlStatus.textContent = "⏳ Crawling website...";
+
     try {
       const res = await fetch(API_CRAWL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          url: document.getElementById("siteUrl").value,
-          maxPages: Number(document.getElementById("maxPages").value)
+          url: document.getElementById("siteUrl").value
         })
       });
 
       const data = await res.json();
-      document.getElementById("crawlStatus").textContent =
-        `✅ Crawled ${data.pagesIndexed} pages.`;
+
+      if (!data.success) {
+        crawlStatus.textContent = "❌ " + (data.error || "Crawl failed");
+        return;
+      }
+
+      crawlStatus.textContent =
+        `✅ Crawled ${data.pagesIndexed} page(s). You can now ask questions.`;
+
     } catch (err) {
       console.error("❌ Crawl Error:", err);
-      document.getElementById("crawlStatus").textContent =
-        "❌ Failed to crawl website.";
+      crawlStatus.textContent = "❌ Failed to crawl website.";
     }
   };
 
+  // ---- Chat ----
   document.getElementById("sendBtn").onclick = async () => {
-    const q = document.getElementById("questionInput").value;
+    const q = document.getElementById("questionInput").value.trim();
     if (!q) return;
 
     msg("user", q);
+    document.getElementById("questionInput").value = "";
+
     try {
       const res = await fetch(API_CHAT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q })
+        body: JSON.stringify({
+          message: q   // ✅ FIXED
+        })
       });
 
       const data = await res.json();
-      msg("bot", data.answer || "No answer.");
+      msg("bot", data.answer || "No answer found.");
+
     } catch (err) {
       console.error("❌ Chat Error:", err);
       msg("bot", "❌ Failed to get answer.");
     }
   };
 </script>
+
 
 </body>
 </html>
