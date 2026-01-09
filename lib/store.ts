@@ -1,14 +1,14 @@
-export type Chunk = {
-  text: string
-  embedding: number[]
+type VectorDoc = {
+  text: string;
+  embedding: number[];
+};
+
+const store: VectorDoc[] = [];
+
+export function addToStore(doc: VectorDoc) {
+  store.push(doc);
 }
 
-let STORE: Chunk[] = []
-
-export function saveChunks(chunks: Chunk[]) {
-  STORE.push(...chunks)
-}
-
-export function getAllChunks(): Chunk[] {
-  return STORE
+export function getStore() {
+  return store;
 }

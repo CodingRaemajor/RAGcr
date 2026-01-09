@@ -1,15 +1,30 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import fs from "fs";
-import path from "path";
+import { embedText } from "../lib/embeddings";
+import { addToStore } from "../lib/store";
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const { text } = req.body;
+
+  if (!text) {
+    return res.status(400).json({ error: "Missing text" });
+  }
+
   try {
-    const filePath = path.join(process.cwd(), "frontend.html");
-    const html = fs.readFileSync(filePath, "utf-8");
+    const embedding = await embedText(text);
+    addToStore({ text, embedding });
 
-    res.setHeader("Content-Type", "text/html");
-    res.status(200).send(html);
-  } catch (err) {
-    res.status(500).send("Failed to load frontend.html");
+    return res.json({ success: true });
+  } catch (err: any) {
+    return res.status(500).json({
+      error: "Embedding failed",
+      details: err.message,
+    });
   }
 }
